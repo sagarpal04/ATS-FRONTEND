@@ -429,10 +429,10 @@ export default function LandingPage({ onStart }: LandingPageProps) {
       <footer className="relative z-10 py-8 px-6 border-t border-border/10">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-primary flex items-center justify-center">
-              <Brain className="w-3 h-3 text-primary-foreground" />
+            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center overflow-hidden border border-white/10">
+              <img src="/log.png" alt="ScanHire AI Logo" className="w-full h-full object-contain" />
             </div>
-            <span className="text-sm font-bold text-foreground/60 font-display">AuraATS</span>
+            <span className="text-sm font-bold text-foreground/60 font-display">ScanHire AI</span>
           </div>
           <p className="text-xs text-muted-foreground/30">Built with AI · Free forever</p>
         </div>

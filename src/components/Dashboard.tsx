@@ -382,10 +382,10 @@ ${jd}
             whileHover={{ x: -2 }}
             className="flex items-center gap-3 group"
           >
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center glow-purple">
-              <Brain className="w-4 h-4 text-primary-foreground" />
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center overflow-hidden border border-white/20">
+              <img src="/log.png" alt="ScanHire AI Logo" className="w-full h-full object-contain" />
             </div>
-            <span className="font-bold text-foreground tracking-tight font-display text-lg">AuraATS</span>
+            <span className="font-bold text-foreground tracking-tight font-display text-lg">ScanHire AI</span>
             <ArrowLeft className="w-3.5 h-3.5 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
           </motion.button>
 

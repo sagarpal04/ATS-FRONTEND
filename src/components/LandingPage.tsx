@@ -430,9 +430,9 @@ export default function LandingPage({ onStart }: LandingPageProps) {
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-lg bg-primary flex items-center justify-center">
-              <Sparkles className="w-3 h-3 text-primary-foreground" />
+              <Brain className="w-3 h-3 text-primary-foreground" />
             </div>
-            <span className="text-sm font-bold text-foreground/60 font-display">ATS Analyst</span>
+            <span className="text-sm font-bold text-foreground/60 font-display">AuraATS</span>
           </div>
           <p className="text-xs text-muted-foreground/30">Built with AI · Free forever</p>
         </div>

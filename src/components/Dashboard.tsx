@@ -14,6 +14,7 @@ import {
   AlertCircle,
   ArrowLeft,
   Wand2,
+  Brain,
 } from "lucide-react";
 
 interface DashboardProps {
@@ -382,9 +383,9 @@ ${jd}
             className="flex items-center gap-3 group"
           >
             <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center glow-purple">
-              <Sparkles className="w-4 h-4 text-primary-foreground" />
+              <Brain className="w-4 h-4 text-primary-foreground" />
             </div>
-            <span className="font-bold text-foreground tracking-tight font-display text-lg">ATS Analyst</span>
+            <span className="font-bold text-foreground tracking-tight font-display text-lg">AuraATS</span>
             <ArrowLeft className="w-3.5 h-3.5 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
           </motion.button>
 

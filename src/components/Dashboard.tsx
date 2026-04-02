@@ -37,12 +37,12 @@ export default function Dashboard({ onBack }: DashboardProps) {
   const [file, setFile] = useState<File | null>(null);
   const [url, setUrl] = useState("");
   const [resume, setResume] = useState("");
+  const [resumeMode, setResumeMode] = useState<"upload" | "paste">("upload");
+  const [isResumeRefining, setIsResumeRefining] = useState(false);
   const [jd, setJd] = useState("");
+  const [isJdRefining, setIsJdRefining] = useState(false);
   const [output, setOutput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [jdUrl, setJdUrl] = useState("");
-  const [jdLoading, setJdLoading] = useState(false);
-  const [jdError, setJdError] = useState("");
   const [uploadDragOver, setUploadDragOver] = useState(false);
 
   // const handleUpload = async () => {
@@ -239,76 +239,34 @@ export default function Dashboard({ onBack }: DashboardProps) {
       setLoading(false);
     }
   };
-  const handleScrapeJD = async () => {
-    console.log("🚀 handleScrapeJD triggered");
-
-    if (!jdUrl.trim()) {
-      console.warn("⚠️ Empty JD URL");
-      setJdError("Please enter a job posting URL.");
-      return;
-    }
-
-    console.log("🔗 JD URL:", jdUrl);
-
-    setJdLoading(true);
-    setJdError("");
-    setJd("");
-
+  const handleRefineJD = async () => {
+    if (!jd.trim()) return;
+    setIsJdRefining(true);
     try {
-      console.log("📡 Sending scrape request...");
-
-      const response = await fetch(`${backendURL}/api/scrape-jd`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ url: jdUrl.trim() }),
-      });
-
-      console.log("📥 Scrape status:", response.status);
-
-      const result = await response.json();
-      console.log("📄 Scrape result:", result);
-
-      if (result.success) {
-        const rawJd = result.text;
-        console.log("✅ JD text length:", rawJd.length);
-
-        const prompt = `Extract only the core Job Description...\n\nRAW TEXT:\n${rawJd}`;
-
-        try {
-          console.log("🤖 Sending JD to AI...");
-          const aiResponse = await window.puter.ai.chat(prompt);
-
-          console.log("🤖 AI JD response:", aiResponse);
-
-          const cleaned =
-            aiResponse?.message?.content ||
-            aiResponse?.content ||
-            (typeof aiResponse === "string"
-              ? aiResponse
-              : JSON.stringify(aiResponse, null, 2));
-
-          console.log("✨ Cleaned JD:", cleaned);
-
-          setJd(cleaned.trim());
-        } catch (aiError) {
-          console.error("❌ AI JD Error:", aiError);
-          setJd(rawJd);
-        }
-
-        setJdUrl("");
-      } else {
-        console.error("❌ Scrape failed:", result.error);
-        setJdError("Scrape failed: " + (result.error || "Unknown error"));
-      }
-    } catch (err: any) {
-      console.error("🔥 Network error:", err);
-      setJdError("Network error: " + err.message);
+      const prompt = `Extract only the core Job Description, Responsibilities, and Qualifications from the following text.\nRemove all website navigation links, company footers, headers, privacy policies, unrelated jobs, and filler text.\nReturn ONLY the pristine job description text.\n\nRAW TEXT:\n${jd}`;
+      const aiResponse = await window.puter.ai.chat(prompt);
+      const cleaned = aiResponse?.message?.content || aiResponse?.content || (typeof aiResponse === "string" ? aiResponse : JSON.stringify(aiResponse, null, 2));
+      setJd(cleaned.trim());
+    } catch (err) {
+      console.error("JD Refine Error:", err);
+    } finally {
+      setIsJdRefining(false);
     }
+  };
 
-    setJdLoading(false);
-    console.log("✅ JD scrape completed");
+  const handleRefineResume = async () => {
+    if (!resume.trim()) return;
+    setIsResumeRefining(true);
+    try {
+      const prompt = `Please fix any messy formatting, line-break artifacts, or PDF extraction errors from the following Resume text.\nExtract ONLY the actual resume content (Contact Info, Experience, Education, Skills, Projects).\nDo not summarize it. Do not remove any valid skills or experience. Return ONLY the clean, structured text.\n\nRAW RESUME TEXT:\n${resume}`;
+      const aiResponse = await window.puter.ai.chat(prompt);
+      const cleaned = aiResponse?.message?.content || aiResponse?.content || (typeof aiResponse === "string" ? aiResponse : JSON.stringify(aiResponse, null, 2));
+      setResume(cleaned.trim());
+    } catch (err) {
+      console.error("Resume Refine Error:", err);
+    } finally {
+      setIsResumeRefining(false);
+    }
   };
   const analyze = async () => {
     console.log("🚀 Analyze triggered");
@@ -479,71 +437,108 @@ ${jd}
                   <FileText className="w-4 h-4 text-accent" />
                 </motion.div>
                 <div>
-                  <h2 className="font-bold text-foreground text-base font-display">Upload Resume</h2>
-                  <p className="text-xs text-muted-foreground">PDF format supported</p>
+                  <h2 className="font-bold text-foreground text-base font-display">Resume</h2>
+                  <p className="text-xs text-muted-foreground">Upload PDF or paste text</p>
                 </div>
               </div>
-              {resume && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="w-6 h-6 rounded-full bg-emerald-glow/20 flex items-center justify-center"
+              <div className="flex bg-secondary/20 p-1 rounded-xl border border-border/40">
+                <button
+                  onClick={() => setResumeMode("upload")}
+                  className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all ${resumeMode === "upload" ? "bg-primary text-primary-foreground glow-purple" : "text-muted-foreground hover:text-foreground"}`}
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-glow" />
-                </motion.div>
-              )}
+                  Upload
+                </button>
+                <button
+                  onClick={() => setResumeMode("paste")}
+                  className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all ${resumeMode === "paste" ? "bg-primary text-primary-foreground glow-purple" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  Paste
+                </button>
+              </div>
             </div>
 
-            <label
-              className={`group flex flex-col items-center justify-center w-full min-h-[140px] border-2 border-dashed rounded-2xl cursor-pointer transition-all text-center px-4 py-6 ${uploadDragOver
-                ? "border-primary/70 bg-primary/10 scale-[1.02]"
-                : "border-border/40 hover:border-primary/40 bg-secondary/10 hover:bg-primary/5"
-                }`}
-              onDragOver={(e) => { e.preventDefault(); setUploadDragOver(true); }}
-              onDragLeave={() => setUploadDragOver(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setUploadDragOver(false);
-                const f = e.dataTransfer.files[0];
-                if (f) setFile(f);
-              }}
-            >
-              <motion.div
-                animate={uploadDragOver ? { scale: 1.2, y: -5 } : { scale: 1, y: 0 }}
-                transition={{ type: "spring" }}
-              >
-                <UploadCloud className={`w-8 h-8 mb-3 transition-colors ${uploadDragOver ? "text-primary" : "text-muted-foreground/50 group-hover:text-primary/70"}`} />
-              </motion.div>
-              <p className="text-sm font-medium text-secondary-foreground">
-                {file ? (
-                  <span className="text-primary">{file.name}</span>
-                ) : (
-                  "Click or drag your PDF here"
-                )}
-              </p>
-              <p className="text-[11px] text-muted-foreground/50 mt-1.5">Max 5 MB · PDF only</p>
-              <input type="file" accept=".pdf" className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-            </label>
+            {resumeMode === "upload" ? (
+              <>
+                <label
+                  className={`group flex flex-col items-center justify-center w-full min-h-[140px] border-2 border-dashed rounded-2xl cursor-pointer transition-all text-center px-4 py-6 ${uploadDragOver
+                    ? "border-primary/70 bg-primary/10 scale-[1.02]"
+                    : "border-border/40 hover:border-primary/40 bg-secondary/10 hover:bg-primary/5"
+                    }`}
+                  onDragOver={(e) => { e.preventDefault(); setUploadDragOver(true); }}
+                  onDragLeave={() => setUploadDragOver(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setUploadDragOver(false);
+                    const f = e.dataTransfer.files[0];
+                    if (f) setFile(f);
+                  }}
+                >
+                  <motion.div
+                    animate={uploadDragOver ? { scale: 1.2, y: -5 } : { scale: 1, y: 0 }}
+                    transition={{ type: "spring" }}
+                  >
+                    <UploadCloud className={`w-8 h-8 mb-3 transition-colors ${uploadDragOver ? "text-primary" : "text-muted-foreground/50 group-hover:text-primary/70"}`} />
+                  </motion.div>
+                  <p className="text-sm font-medium text-secondary-foreground">
+                    {file ? (
+                      <span className="text-primary">{file.name}</span>
+                    ) : (
+                      "Click or drag your PDF here"
+                    )}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground/50 mt-1.5">Max 5 MB · PDF only</p>
+                  <input type="file" accept=".pdf" className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+                </label>
 
-            <motion.button
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              onClick={handleUpload}
-              disabled={loading || !file}
-              className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold border border-border/40 bg-secondary/20 hover:bg-secondary/40 text-foreground transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              {loading && !output ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                  <span>Processing & Refining...</span>
-                </>
-              ) : (
-                <>
-                  <UploadCloud className="w-4 h-4 text-primary" />
-                  <span>Extract & Refine Text</span>
-                </>
-              )}
-            </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  onClick={handleUpload}
+                  disabled={loading || !file}
+                  className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold border border-border/40 bg-secondary/20 hover:bg-secondary/40 text-foreground transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  {loading && !output ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                      <span>Processing & Refining...</span>
+                    </>
+                  ) : (
+                    <>
+                      <UploadCloud className="w-4 h-4 text-primary" />
+                      <span>Extract & Refine Text</span>
+                    </>
+                  )}
+                </motion.button>
+              </>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <textarea
+                  placeholder="Paste your resume text here..."
+                  value={resume}
+                  onChange={(e) => setResume(e.target.value)}
+                  className="w-full min-h-[140px] p-4 bg-secondary/10 border border-border/20 rounded-2xl text-sm text-secondary-foreground placeholder-muted-foreground/30 resize-none focus:outline-none focus:border-primary/30 focus:bg-primary/5 transition-all font-sans"
+                />
+                <motion.button
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  onClick={handleRefineResume}
+                  disabled={isResumeRefining || !resume.trim()}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold border border-primary/20 bg-primary/10 hover:bg-primary/20 text-primary transition-all disabled:opacity-30"
+                >
+                  {isResumeRefining ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Refining...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      <span>Auto Refine with AI</span>
+                    </>
+                  )}
+                </motion.button>
+              </div>
+            )}
 
             <AnimatePresence>
               {url && (
@@ -597,60 +592,32 @@ ${jd}
               )}
             </div>
 
-            {/* URL Scraper */}
-            <div className="mb-4">
-              <label className="block text-[10px] font-semibold tracking-[0.2em] uppercase text-muted-foreground/60 mb-2">
-                Auto-fill from URL
-              </label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40" />
-                  <input
-                    type="url"
-                    placeholder="https://linkedin.com/jobs/..."
-                    value={jdUrl}
-                    onChange={(e) => { setJdUrl(e.target.value); setJdError(""); }}
-                    disabled={jdLoading}
-                    className="w-full pl-9 pr-3 py-2.5 bg-secondary/20 border border-border/40 rounded-xl text-sm text-foreground placeholder-muted-foreground/40 focus:outline-none focus:border-primary/50 focus:bg-primary/5 transition-all"
-                  />
-                </div>
-                <motion.button
-                  whileHover={{ scale: 1.04 }}
-                  whileTap={{ scale: 0.96 }}
-                  onClick={handleScrapeJD}
-                  disabled={jdLoading}
-                  className="px-5 rounded-xl text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 border border-primary/20 transition-all disabled:opacity-40 flex items-center gap-2 min-w-[90px] justify-center"
-                >
-                  {jdLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Scrape"}
-                </motion.button>
-              </div>
-              <AnimatePresence>
-                {jdError && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    className="text-destructive text-xs flex items-center gap-1 mt-2"
-                  >
-                    <AlertCircle className="w-3 h-3" /> {jdError}
-                  </motion.p>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Separator */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border/30 to-transparent" />
-              <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-muted-foreground/40">Or Paste</span>
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border/30 to-transparent" />
-            </div>
-
             <textarea
               placeholder="Paste the full job description here..."
               value={jd}
               onChange={(e) => setJd(e.target.value)}
               className="flex-1 min-h-[180px] w-full p-4 bg-secondary/10 border border-border/20 rounded-2xl text-sm text-secondary-foreground placeholder-muted-foreground/30 resize-none focus:outline-none focus:border-primary/30 focus:bg-primary/5 transition-all font-sans"
             />
+
+            <motion.button
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              onClick={handleRefineJD}
+              disabled={isJdRefining || !jd.trim()}
+              className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold border border-primary/20 bg-primary/10 hover:bg-primary/20 text-primary transition-all disabled:opacity-30"
+            >
+              {isJdRefining ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Refining...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  <span>Auto Refine with AI</span>
+                </>
+              )}
+            </motion.button>
           </motion.div>
 
           {/* Mobile Analyze */}
